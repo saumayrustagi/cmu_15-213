@@ -1,7 +1,7 @@
 /* 
  * CS:APP Data Lab 
  * 
- * <Please put your name and userid here>
+ * Saumay Rustagi - saumayrustagi
  * 
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -143,7 +143,7 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  return ~(~(~x & y) & ~(x & ~y));
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -153,7 +153,7 @@ int bitXor(int x, int y) {
  */
 int tmin(void) {
 
-  return 2;
+  return 1 << 31;
 
 }
 //2
@@ -165,7 +165,9 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  int maxInt = !((x + 1) ^ ~x);  // true for (1<<31 - 1) and -1
+  int minusOne = !(x + 1);       // true for -1
+  return maxInt & !minusOne;     // true for (1<<31 - 1) and false for -1
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +178,8 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int bitmask = 0xAA + (0xAA << 8) + (0xAA << 16) + (0xAA << 24);
+  return !((bitmask & x) ^ bitmask);
 }
 /* 
  * negate - return -x 
@@ -186,7 +189,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -198,8 +201,11 @@ int negate(int x) {
  *   Max ops: 15
  *   Rating: 3
  */
-int isAsciiDigit(int x) {
-  return 2;
+int isAsciiDigit(int x)
+{
+  int a = 0x39 + (~x + 1);
+  int b = x + (~0x30 + 1);
+  return !(a >> 31) & !(b >> 31);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -208,8 +214,10 @@ int isAsciiDigit(int x) {
  *   Max ops: 16
  *   Rating: 3
  */
-int conditional(int x, int y, int z) {
-  return 2;
+int conditional(int x, int y, int z)
+{
+  int mask = ~(!x) + 1;            // all 1s if x is 0
+  return (y & ~mask) | (z & mask); // x is 0 => (y & 0) | z, x is 1 => y | (z & 0)
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -218,8 +226,13 @@ int conditional(int x, int y, int z) {
  *   Max ops: 24
  *   Rating: 3
  */
-int isLessOrEqual(int x, int y) {
-  return 2;
+int isLessOrEqual(int x, int y)
+{
+  int sign_x = x >> 31 & 1;                           // 1 if x is negative
+  int diff_sign = (x ^ y) >> 31;                      // all 1s if x and y have diff signs
+  int same_case = ~diff_sign & !((y + ~x + 1) >> 31); // 0 if x>y or diff signs and 1 if x<=y
+  int diff_case = sign_x & diff_sign;                 // 0 if x>y or same signs and 1 if x<=y
+  return diff_case | same_case;
 }
 //4
 /* 
@@ -230,8 +243,10 @@ int isLessOrEqual(int x, int y) {
  *   Max ops: 12
  *   Rating: 4 
  */
-int logicalNeg(int x) {
-  return 2;
+int logicalNeg(int x)
+{
+  int ans = ((x | (~x + 1)) >> 31) + 1;
+  return ans;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -245,8 +260,38 @@ int logicalNeg(int x) {
  *  Max ops: 90
  *  Rating: 4
  */
-int howManyBits(int x) {
-  return 0;
+int howManyBits(int x)
+{
+  int y, neg, numBits, cond_mask, topBits;
+  neg = x >> 31;
+  x = (neg & ~x) | (~neg & x); // non-negative x
+  y = x;
+
+  topBits = y >> 16;
+  cond_mask = ~(!!(topBits)) + 1; // all 1s when inTop16
+  numBits = (16 & cond_mask);     // add 16 when inTop16
+  y = x >> numBits;               // get upper 16 bits when inTop16
+
+  topBits = y >> 8;
+  cond_mask = ~(!!(topBits)) + 1;
+  numBits += (8 & cond_mask);
+  y = x >> numBits;
+
+  topBits = y >> 4;
+  cond_mask = ~(!!(topBits)) + 1;
+  numBits += (4 & cond_mask);
+  y = x >> numBits;
+
+  topBits = y >> 2;
+  cond_mask = ~(!!(topBits)) + 1;
+  numBits += (2 & cond_mask);
+  y = x >> numBits;
+
+  numBits += (y >> 1) & 1;
+  numBits += !!y;
+  numBits += 1;
+
+  return numBits;
 }
 //float
 /* 
