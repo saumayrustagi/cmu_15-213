@@ -305,8 +305,39 @@ int howManyBits(int x)
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned floatScale2(unsigned uf) {
-  return 2;
+unsigned floatScale2(unsigned uf)
+{
+  /* uf = sign + exp(8) + mantissa(23)
+   * sign doesn't matter
+   * special cases when exp is 0 or 255
+   * exp -> 0,   mantissa -> 0  => 0
+   *             mantissa -> !0 => subnormal with gradual underflow
+   * exp -> 255, mantissa -> 0  => inf
+   *             mantissa -> !0 => nan
+   */
+
+  unsigned char exp;
+  unsigned mask, double_exp;
+
+  if (!(uf << 1))
+    return uf; // if only sign bit set, the number is 0 or inf;
+
+  exp = uf >> 23;
+
+  if (!(~exp & 0xFF)) // if exp == 255, the number is inf or nan
+    return uf;
+
+  if (!exp) // if exp == 0 (implicit mantissa != 0)
+  {
+    unsigned sign = uf & (1u << 31);
+    return (uf << 1) | sign;
+  }
+
+  double_exp = (exp + 1) << 23;
+  mask = 0xFF << 23;
+  uf = (uf & ~mask) | double_exp;
+
+  return uf;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -320,8 +351,43 @@ unsigned floatScale2(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
-int floatFloat2Int(unsigned uf) {
-  return 2;
+int floatFloat2Int(unsigned uf)
+{
+  // basically just decode the float, then check against integer limits.
+  // test (int) 0xC0A00000 == -5
+
+  char sign;
+  int exp, res;
+  unsigned mant, l23;
+
+  res = 0x80000000u;
+
+  sign = (uf >> 31) & 1; // 1 if no. is negative
+  if (sign)
+    sign = -1;
+  else
+    sign = 1;
+
+  exp = (uf >> 23) & 0xFFu;
+  exp -= 127;
+
+  if (exp < 0)
+    return 0;
+  if (!exp)
+    return sign;
+
+  l23 = 1u << 23;
+
+  mant = uf & (l23 - 1);
+
+  mant = l23 | mant;
+
+  if (exp < 24)
+    res = mant >> (23 - exp);
+  else if (exp < 55)
+    res = mant << (exp - 23);
+
+  return sign * res;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -336,6 +402,15 @@ int floatFloat2Int(unsigned uf) {
  *   Max ops: 30 
  *   Rating: 4
  */
-unsigned floatPower2(int x) {
-    return 2;
+unsigned floatPower2(int x)
+{
+  unsigned exponent = 0x7F;
+  if (x > 128)
+    x = 128;
+  if (x < -149)
+    return 0u;
+  if (x < -126)
+    return 1u << (x + 149);
+  exponent += x;
+  return exponent << 23;
 }
