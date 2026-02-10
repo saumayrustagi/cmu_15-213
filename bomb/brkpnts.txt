@@ -1,2 +1,2 @@
-break phase_5
 break explode_bomb
+break main
