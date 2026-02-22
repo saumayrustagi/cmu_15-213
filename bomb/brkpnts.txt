@@ -1,2 +1,2 @@
 break explode_bomb
-break main
+break *phase_6+241

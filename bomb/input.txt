@@ -3,3 +3,7 @@ Border relations with Canada have never been better.
 7 327
 1 0
 ionefg
+1 2 3 4 5 6
+
+# gets transformed in this way: x -> 7-x
+# linked list at x/12gx 0x6032d0
