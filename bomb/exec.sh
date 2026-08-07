@@ -3,4 +3,5 @@ gdb ./bomb -tui \
 	-x ./brkpnts.txt \
 	-ex 'r < input.txt' \
 	-ex 'layout asm' \
-	-ex 'layout reg'
+	-ex 'layout reg' \
+	-ex 'focus cmd'
